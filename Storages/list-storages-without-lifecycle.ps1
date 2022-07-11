@@ -3,25 +3,26 @@ param (
     [string]$FilePath=".\output.csv"
 )
 
-$PadLength = 30
+$PadLength = 50
 
 if ($GenerateFile -and (Test-Path -Path $FilePath -PathType Leaf)) {
     Remove-Item -Path $FilePath
 }
 
-# You may filter the resources by tenant or subscription.
-#$Context = Set-AzContext -Tenant "<tenant-id>" or -Subscription "<subscription-id>"
-
 $ErrorActionPreference = 'SilentlyContinue'
-Write-Host "ResourceGroupName".PadRight($PadLength) "StorageAccountName".PadRight($PadLength) "Kind".PadRight($PadLength) HasPolicy
-Write-Host "".PadRight($PadLength, '-') "".PadRight($PadLength, '-') "".PadRight($PadLength, '-') "".PadRight($PadLength, '-')
+Write-Host "SubscriptionName".PadRight($PadLength) "ResourceGroupName".PadRight($PadLength) "StorageAccountName".PadRight($PadLength) "Kind".PadRight(20) HasPolicy
+Write-Host "".PadRight($PadLength, '-') "".PadRight($PadLength, '-') "".PadRight($PadLength, '-') "".PadRight(20, '-') "".PadRight(10, '-')
 
-Get-AzStorageAccount -DefaultProfile $Context | ForEach-Object {
-    $HasPolicy = $_.Kind -eq 'StorageV2' -and (Get-AzStorageAccountManagementPolicy -StorageAccount $_) -ne $null
+ForEach ($Subscription in Get-AzSubscription) {
+    $Context = Set-AzContext -Subscription $Subscription
 
-    Write-Host $_.ResourceGroupName.PadRight($PadLength) $_.StorageAccountName.PadRight($PadLength) $_.Kind.PadRight($PadLength) $HasPolicy
+    Get-AzStorageAccount -DefaultProfile $Context | ForEach-Object {
+        $HasPolicy = $_.Kind -eq 'StorageV2' -and (Get-AzStorageAccountManagementPolicy -StorageAccount $_) -ne $null
 
-    if ($GenerateFile) {
-        Add-Content -Path $FilePath -Value "$($_.ResourceGroupName);$($_.StorageAccountName);$($_.Kind);$($HasPolicy)"
+        Write-Host $Subscription.Name.PadRight($PadLength) $_.ResourceGroupName.PadRight($PadLength) $_.StorageAccountName.PadRight($PadLength) $_.Kind.PadRight(20) $HasPolicy
+
+        if ($GenerateFile) {
+            Add-Content -Path $FilePath -Value "$($_.Name);$($_.ResourceGroupName);$($_.StorageAccountName);$($_.Kind);$($HasPolicy)"
+        }
     }
 }
