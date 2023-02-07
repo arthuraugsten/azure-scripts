@@ -1,0 +1,1 @@
+az network private-endpoint list -g "RG-SAMPLE" --query "[].privateLinkServiceConnections[?privateLinkServiceConnectionState.status == 'Disconnected']"
